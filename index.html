@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sylli</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2357068c'/%3E%3Cpath d='M9 12h14M9 17h14M9 22h8' stroke='white' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{
+  --purple:#57068c; --purple-600:#6d1aa6; --purple-100:#f1e8f7; --purple-50:#faf6fc;
+  --ink:#1c1524; --muted:#6b6375; --line:#e8e2ee; --bg:#fbfafc; --card:#ffffff;
+  --ok:#0b8043; --warn:#b3261e; --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer}
+h1,h2,h3{margin:0;font-weight:600}
+.serif{font-family:"Instrument Serif",Georgia,serif;font-weight:400;letter-spacing:.2px}
+
+/* header */
+.top{display:flex;align-items:center;gap:12px;padding:14px 24px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:5}
+.logo{width:34px;height:34px;border-radius:9px;background:var(--purple);display:grid;place-items:center;flex:none}
+.logo svg{width:18px;height:18px}
+.brand{font-size:28px;line-height:1;color:var(--purple)}
+.tag{color:var(--muted);font-size:13px;margin-left:2px}
+.spacer{flex:1}
+.status{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:13px}
+.dot{width:8px;height:8px;border-radius:50%;background:#c9c2d1}
+.dot.on{background:var(--ok)} .dot.off{background:var(--warn)}
+.ghost{background:none;border:1px solid var(--line);border-radius:9px;padding:6px 11px;color:var(--muted);font-size:13px}
+.ghost:hover{border-color:var(--purple);color:var(--purple)}
+
+/* layout */
+.wrap{max-width:1240px;margin:0 auto;padding:22px 24px 40px;display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:22px;align-items:start}
+.col{display:flex;flex-direction:column;gap:22px;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.card h2{font-size:15px;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.card h2 .count{color:var(--muted);font-weight:500;font-size:13px}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+
+/* upload */
+.drop{border:1.5px dashed #cdbfdb;border-radius:12px;background:var(--purple-50);padding:22px;text-align:center;transition:.15s}
+.drop.over{border-color:var(--purple);background:var(--purple-100)}
+.drop b{color:var(--purple)}
+.drop p{margin:4px 0 0;color:var(--muted);font-size:13.5px}
+.drop .pick{margin-top:12px;background:var(--purple);color:#fff;border:0;border-radius:10px;padding:9px 16px;font-weight:500}
+.drop .pick:hover{background:var(--purple-600)}
+.filebar{display:none;margin-top:14px;gap:10px;align-items:center;flex-wrap:wrap}
+.filebar.show{display:flex}
+.chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filebar input{flex:1;min-width:180px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit}
+.primary{background:var(--purple);color:#fff;border:0;border-radius:10px;padding:9px 16px;font-weight:500}
+.primary:disabled{opacity:.5;cursor:default}
+
+/* classes */
+.classes{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.class{border:1px solid var(--line);border-radius:12px;padding:14px 14px 12px;position:relative;overflow:hidden;background:#fff}
+.class::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--c,#b9aec6)}
+.class .code{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.4px}
+.class .name{font-weight:600;margin:1px 0 8px}
+.meet{font-size:13.5px;color:#3b3345;display:flex;gap:6px;margin:2px 0}
+.meet span:first-child{color:var(--muted);min-width:74px}
+.swatches{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;padding-top:10px;border-top:1px solid var(--line)}
+.sw{width:19px;height:19px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);padding:0}
+.sw:hover{transform:scale(1.15)}
+.sw.sel{box-shadow:0 0 0 2px var(--ink)}
+
+/* upcoming */
+.day{display:grid;grid-template-columns:86px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.day:first-of-type{border-top:0;padding-top:2px}
+.day .when{font-size:13px;color:var(--muted)}
+.day .when b{display:block;color:var(--ink);font-size:14px}
+.ev{display:flex;align-items:center;gap:9px;padding:3px 0}
+.ev i{width:9px;height:9px;border-radius:50%;flex:none;background:var(--c,#b9aec6)}
+.ev .t{flex:1;min-width:0}
+.ev .time{color:var(--muted);font-size:13px;white-space:nowrap}
+.badge{font-size:11px;font-weight:600;border-radius:6px;padding:2px 6px;background:var(--purple-100);color:var(--purple);white-space:nowrap}
+
+/* chat */
+.chat{position:sticky;top:84px;display:flex;flex-direction:column;height:calc(100vh - 108px);min-height:440px;padding:0;overflow:hidden}
+.chat header{padding:14px 16px;border-bottom:1px solid var(--line)}
+.chat header h2{margin:0}
+.chat header p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.msgs{flex:1;overflow:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:8px;background:var(--purple-50)}
+.m{max-width:86%;padding:9px 12px;border-radius:14px;white-space:pre-wrap;word-wrap:break-word;font-size:14.5px}
+.m.user{align-self:flex-end;background:var(--purple);color:#fff;border-bottom-right-radius:5px}
+.m.assistant{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:5px}
+.m.system{align-self:center;background:none;color:var(--muted);font-size:12.5px;text-align:center;max-width:100%;padding:2px 6px}
+.typing{align-self:flex-start;background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px 14px;display:flex;gap:4px}
+.typing i{width:6px;height:6px;border-radius:50%;background:#b9aec6;animation:b 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,60%,100%{opacity:.3;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+.confirm{margin:0 14px 10px;border:1px solid #f0c9c5;background:#fff6f5;border-radius:12px;padding:12px}
+.confirm b{display:block;margin-bottom:4px}
+.confirm ul{margin:0 0 10px;padding-left:18px;font-size:13.5px;max-height:110px;overflow:auto}
+.confirm .row{display:flex;gap:8px}
+.danger{background:var(--warn);color:#fff;border:0;border-radius:9px;padding:8px 14px;font-weight:500}
+.quick{display:flex;gap:6px;overflow:auto;padding:8px 14px 0}
+.quick button{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:13px;color:#3b3345}
+.quick button:hover{border-color:var(--purple);color:var(--purple)}
+.compose{display:flex;gap:8px;padding:10px 14px 14px}
+.compose textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;height:44px;max-height:120px}
+.compose textarea:focus,.filebar input:focus,.lock input:focus{outline:2px solid var(--purple-100);border-color:var(--purple)}
+.send{width:44px;height:44px;border-radius:12px;border:0;background:var(--purple);color:#fff;display:grid;place-items:center;flex:none}
+.send:disabled{opacity:.45;cursor:default}
+
+/* lock */
+.lock{position:fixed;inset:0;background:rgba(251,250,252,.96);display:none;place-items:center;z-index:20;padding:20px}
+.lock.show{display:grid}
+.lock form{width:100%;max-width:360px;text-align:center}
+.lock .brand{font-size:52px;margin:14px 0 4px}
+.lock p{color:var(--muted);margin:0 0 18px}
+.lock input{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font:inherit;text-align:center}
+.lock button{width:100%;margin-top:10px;padding:12px}
+.err{color:var(--warn);font-size:13.5px;min-height:20px;margin-top:8px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:30;max-width:90vw}
+.toast.show{opacity:1}
+
+@media (max-width:920px){
+  .wrap{grid-template-columns:1fr;padding:16px}
+  .chat{position:static;height:560px}
+  .top{padding:12px 16px}.tag{display:none}
+  .day{grid-template-columns:70px 1fr}
+  .ev{flex-wrap:wrap;row-gap:2px}
+  .ev .t{flex:1 1 calc(100% - 20px)}
+  .ev .badge{margin-left:18px}
+}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="logo"><svg viewBox="0 0 18 18" fill="none"><path d="M3 5h12M3 9h12M3 13h7" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div>
+  <div class="brand serif">Sylli</div>
+  <div class="tag">your syllabi, on your calendar</div>
+  <div class="spacer"></div>
+  <div class="status"><span class="dot" id="dot"></span><span id="statusText">connecting</span></div>
+  <button class="ghost" id="lockBtn" title="Forget passcode on this device">Lock</button>
+</div>
+
+<div class="wrap">
+  <div class="col">
+    <section class="card">
+      <h2>Add a syllabus</h2>
+      <div class="drop" id="drop">
+        <div><b>Drop a syllabus PDF here</b></div>
+        <p>Sylli reads it and adds every class meeting, exam and deadline to your Google Calendar.</p>
+        <button class="pick" id="pick" type="button">Choose PDF</button>
+        <input type="file" id="file" accept="application/pdf,.pdf" hidden>
+      </div>
+      <div class="filebar" id="filebar">
+        <span class="chip" id="fileName"></span>
+        <input id="note" placeholder='Optional note, e.g. "make this class green"' maxlength="200">
+        <button class="primary" id="uploadBtn" type="button">Add to calendar</button>
+        <button class="ghost" id="clearFile" type="button">Remove</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Your classes <span class="count" id="classCount"></span></h2>
+      <div class="classes" id="classes"><div class="empty">Loading…</div></div>
+    </section>
+
+    <section class="card">
+      <h2>Coming up <span class="count" id="upCount"></span></h2>
+      <div id="upcoming"><div class="empty">Loading…</div></div>
+    </section>
+  </div>
+
+  <section class="card chat">
+    <header>
+      <h2>Ask Sylli</h2>
+      <p>Move a due date, cancel a class, change a color, add an assignment.</p>
+    </header>
+    <div class="msgs" id="msgs"></div>
+    <div class="confirm" id="confirm" hidden>
+      <b id="confirmTitle"></b>
+      <ul id="confirmList"></ul>
+      <div class="row"><button class="danger" id="yesBtn" type="button">Yes, delete</button><button class="ghost" id="noBtn" type="button">Cancel</button></div>
+    </div>
+    <div class="quick" id="quick">
+      <button type="button">What's due this week?</button>
+      <button type="button">List my classes</button>
+      <button type="button">What did you add last?</button>
+    </div>
+    <div class="compose">
+      <textarea id="input" placeholder="Midterm moved to 10/28…" rows="1"></textarea>
+      <button class="send" id="send" type="button" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-3-7-7-1z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></button>
+    </div>
+  </section>
+</div>
+
+<div class="lock" id="lock">
+  <form id="lockForm">
+    <div class="logo" style="margin:0 auto;width:52px;height:52px;border-radius:14px"><svg viewBox="0 0 18 18" fill="none" style="width:26px;height:26px"><path d="M3 5h12M3 9h12M3 13h7" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div>
+    <div class="brand serif">Sylli</div>
+    <p>Enter your passcode to open your calendar assistant.</p>
+    <input type="password" id="key" placeholder="Passcode" autocomplete="current-password" required>
+    <button class="primary" type="submit" id="unlockBtn">Unlock</button>
+    <div class="err" id="lockErr"></div>
+  </form>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- config ---------- */
+const API = 'https://cv2342.app.n8n.cloud/webhook/sylli';
+const DEMO = new URLSearchParams(location.search).has('demo');
+const COLORS = {1:['Lavender','#7986cb'],2:['Sage','#33b679'],3:['Grape','#8e24aa'],4:['Flamingo','#e67c73'],5:['Banana','#f6bf26'],6:['Tangerine','#f4511e'],7:['Peacock','#039be5'],8:['Graphite','#616161'],9:['Blueberry','#3f51b5'],10:['Basil','#0b8043'],11:['Tomato','#d50000']};
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let key = '';
+try { key = localStorage.getItem('sylli-key') || ''; } catch (e) {}
+let feed = [], pending = [], waiting = null, pollTimer = null, pdfText = '', pdfName = '';
+
+/* ---------- api ---------- */
+async function api(path, opts = {}) {
+  if (DEMO) return demo(path, opts);
+  const res = await fetch(API + path, { ...opts, headers: { 'X-Sylli-Key': key, ...(opts.body ? { 'Content-Type': 'application/json' } : {}) } });
+  if (res.status === 401 || res.status === 403) { const e = new Error('locked'); e.locked = true; throw e; }
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const txt = await res.text();
+  try { return JSON.parse(txt); } catch (e) { return {}; }
+}
+function setStatus(on, text) { $('dot').className = 'dot ' + (on ? 'on' : 'off'); $('statusText').textContent = text; }
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 3200); }
+
+/* ---------- lock ---------- */
+function showLock(msg) { $('lock').classList.add('show'); $('lockErr').textContent = msg || ''; setTimeout(() => $('key').focus(), 50); }
+$('lockForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  key = $('key').value.trim(); $('unlockBtn').disabled = true; $('lockErr').textContent = '';
+  try { await loadFeed(); try { localStorage.setItem('sylli-key', key); } catch (e) {} $('lock').classList.remove('show'); $('key').value = ''; loadState(); }
+  catch (err) { $('lockErr').textContent = err.locked ? 'Wrong passcode.' : "Can't reach Sylli right now. Try again in a moment."; }
+  $('unlockBtn').disabled = false;
+});
+$('lockBtn').onclick = () => { key = ''; try { localStorage.removeItem('sylli-key'); } catch (e) {} showLock(); };
+
+/* ---------- classes + upcoming ---------- */
+function colorOf(id) { return (COLORS[id] || [null, '#b9aec6'])[1]; }
+function renderState(s) {
+  const cl = s.classes || [];
+  $('classCount').textContent = cl.length ? cl.length : '';
+  $('classes').innerHTML = cl.length ? cl.map(c => `
+    <div class="class" style="--c:${colorOf(c.colorId)}">
+      <div class="code">${esc(c.code)}</div>
+      <div class="name">${esc(c.name || c.code)}</div>
+      ${(c.meetings || []).map(m => `<div class="meet"><span>${esc(m.type)}</span><span>${esc(m.days)} · ${esc(m.time)}${m.location ? ' · ' + esc(m.location) : ''}</span></div>`).join('') || '<div class="meet"><span>No class times</span></div>'}
+      <div class="swatches" role="group" aria-label="Class color">
+        ${Object.entries(COLORS).map(([id, [n, hex]]) => `<button class="sw${String(c.colorId) === id ? ' sel' : ''}" style="background:${hex}" title="${n}" aria-label="${n}" data-code="${esc(c.code)}" data-color="${n}"></button>`).join('')}
+      </div>
+    </div>`).join('') : '<div class="empty">No classes yet. Add a syllabus above to get started.</div>';
+  const up = s.upcoming || [];
+  $('upCount').textContent = up.length ? `next ${up.length}` : '';
+  const days = {};
+  up.forEach(e => (days[e.date] = days[e.date] || []).push(e));
+  $('upcoming').innerHTML = up.length ? Object.entries(days).map(([d, evs]) => {
+    const dt = new Date(d + 'T12:00:00');
+    return `<div class="day"><div class="when"><b>${dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</b>${dt.toLocaleDateString('en-US', { weekday: 'long' })}</div><div>${evs.map(e => `
+      <div class="ev" style="--c:${colorOf(e.colorId)}"><i></i><div class="t">${esc(e.title)}</div>${e.kind ? `<span class="badge">${esc(e.kind)}</span>` : ''}<span class="time">${esc(e.time || 'all day')}</span></div>`).join('')}</div></div>`;
+  }).join('') : '<div class="empty">Nothing coming up.</div>';
+}
+async function loadState() {
+  try { renderState(await api('/state')); setStatus(true, 'connected'); }
+  catch (e) { if (e.locked) return showLock(); setStatus(false, 'offline'); }
+}
+$('classes').addEventListener('click', e => {
+  const b = e.target.closest('.sw'); if (!b) return;
+  sendChat(`make ${b.dataset.code} ${b.dataset.color}`);
+});
+
+/* ---------- chat ---------- */
+function renderChat() {
+  const box = $('msgs');
+  const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  let html = feed.map(r => `<div class="m ${r.role}">${esc(r.content)}</div>`).join('');
+  if (!feed.length && !waiting) html = '<div class="m system">Say hi, or drop in a syllabus to get started.</div>';
+  if (waiting) {
+    const seen = feed.some(r => r.id > waiting.base && r.role === 'user');
+    if (!seen && waiting.text) html += `<div class="m user">${esc(waiting.text)}</div>`;
+    html += '<div class="typing"><i></i><i></i><i></i></div>';
+  }
+  box.innerHTML = html;
+  if (nearBottom || waiting) box.scrollTop = box.scrollHeight;
+  const c = $('confirm');
+  if (pending.length && !waiting) {
+    c.hidden = false;
+    $('confirmTitle').textContent = `Delete ${pending.length} event${pending.length === 1 ? '' : 's'}?`;
+    $('confirmList').innerHTML = pending.map(p => `<li>${esc(p.label || p.event_id)}</li>`).join('');
+  } else c.hidden = true;
+  $('send').disabled = !!waiting; $('uploadBtn').disabled = !!waiting || !pdfText;
+}
+async function loadFeed() {
+  const d = await api('/feed');
+  feed = d.messages || []; pending = d.pending || [];
+  renderChat(); return d;
+}
+function maxId() { return feed.reduce((m, r) => Math.max(m, r.id || 0), 0); }
+function startWaiting(text) {
+  waiting = { base: maxId(), text, started: Date.now() };
+  renderChat(); clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    try { await loadFeed(); } catch (e) { return; }
+    const done = feed.some(r => r.id > waiting.base && r.role === 'assistant');
+    const tooLong = Date.now() - waiting.started > 5 * 60 * 1000;
+    if (done || tooLong) {
+      clearInterval(pollTimer); waiting = null; renderChat(); loadState();
+      if (tooLong && !done) toast('Sylli is taking longer than usual. Check back in a minute.');
+    }
+  }, 3000);
+}
+async function sendChat(text) {
+  text = (text || '').trim(); if (!text || waiting) return;
+  $('input').value = ''; autosize();
+  startWaiting(text);
+  try { await api('/message', { method: 'POST', body: JSON.stringify({ kind: 'chat', text }) }); }
+  catch (e) { clearInterval(pollTimer); waiting = null; renderChat(); if (e.locked) return showLock(); toast("Couldn't send that. Try again."); }
+}
+function autosize() { const t = $('input'); t.style.height = '44px'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; }
+$('input').addEventListener('input', autosize);
+$('input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat($('input').value); } });
+$('send').onclick = () => sendChat($('input').value);
+$('quick').addEventListener('click', e => { if (e.target.tagName === 'BUTTON') sendChat(e.target.textContent); });
+$('yesBtn').onclick = () => sendChat('yes');
+$('noBtn').onclick = () => sendChat('no');
+
+/* ---------- upload ---------- */
+async function readPdf(file) {
+  if (!file) return;
+  if (!/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) return toast('That file is not a PDF.');
+  $('fileName').textContent = 'Reading ' + file.name + '…'; $('filebar').classList.add('show'); pdfText = '';
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    let out = '';
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const tc = await (await pdf.getPage(p)).getTextContent();
+      let line = '', lastY = null;
+      for (const it of tc.items) {
+        const y = Math.round(it.transform[5]);
+        if (lastY !== null && Math.abs(y - lastY) > 2) { out += line.trim() + '\n'; line = ''; }
+        line += it.str + ' '; lastY = y;
+      }
+      out += line.trim() + '\n\n';
+    }
+    pdfText = out.trim(); pdfName = file.name;
+    if (pdfText.length < 40) { pdfText = ''; $('fileName').textContent = file.name; return toast("Couldn't read text from that PDF. It may be a scan."); }
+    $('fileName').textContent = file.name;
+  } catch (e) { $('fileName').textContent = file.name; toast("Couldn't open that PDF."); }
+  renderChat();
+}
+function clearFile() { pdfText = ''; pdfName = ''; $('file').value = ''; $('note').value = ''; $('filebar').classList.remove('show'); renderChat(); }
+$('pick').onclick = () => $('file').click();
+$('file').onchange = e => readPdf(e.target.files[0]);
+$('clearFile').onclick = clearFile;
+const drop = $('drop');
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => readPdf(e.dataTransfer.files[0]));
+$('uploadBtn').onclick = async () => {
+  if (!pdfText || waiting) return;
+  const note = $('note').value.trim(), name = pdfName, text = pdfText;
+  startWaiting(`📄 ${name}${note ? '\n' + note : ''}`);
+  clearFile();
+  try { await api('/message', { method: 'POST', body: JSON.stringify({ kind: 'upload', pdfText: text, text: note, fileName: name }) }); toast('Reading your syllabus. This takes a minute or two.'); }
+  catch (e) { clearInterval(pollTimer); waiting = null; renderChat(); if (e.locked) return showLock(); toast("Couldn't send the syllabus. Try again."); }
+};
+
+/* ---------- demo data (open the page with ?demo) ---------- */
+const demoDb = { id: 6, messages: [
+  { id: 1, role: 'system', content: 'Added Venture Capital & Growth Equity (FINC-UB 4050): 3 class series, 14 dates' },
+  { id: 2, role: 'user', content: 'make it blue' },
+  { id: 3, role: 'assistant', content: 'Done. All 17 FINC-UB 4050 events are now blue (Blueberry).' },
+  { id: 4, role: 'user', content: 'midterm got moved to 10/27 same time' },
+  { id: 5, role: 'assistant', content: 'Moved the FINC-UB 4050 midterm to Tue Oct 27, 11:00 AM–12:15 PM.' } ], pending: [] };
+function demo(path, opts) {
+  return new Promise(res => setTimeout(() => {
+    if (path === '/feed') return res(demoDb);
+    if (path === '/message') { const b = JSON.parse(opts.body); demoDb.messages.push({ id: ++demoDb.id, role: 'user', content: b.kind === 'upload' ? `(sent syllabus PDF: ${b.fileName}) ${b.text}` : b.text });
+      setTimeout(() => demoDb.messages.push({ id: ++demoDb.id, role: 'assistant', content: 'This is the demo page, so nothing was changed. On the real page I would do that for you.' }), 2500); return res({}); }
+    res({ classes: [
+      { code: 'FINC-UB 4050', name: 'Venture Capital & Growth Equity', colorId: 9, meetings: [{ type: 'Lecture', days: 'Tue, Thu', time: '11:00 AM–12:15 PM', location: 'KMC 3-120' }, { type: 'Recitation', days: 'Fri', time: '9:30–10:20 AM', location: 'Tisch LC-19' }] },
+      { code: 'ECON-UA 10', name: 'Intermediate Microeconomics', colorId: 10, meetings: [{ type: 'Lecture', days: 'Mon, Wed', time: '2:00–3:15 PM', location: 'Silver 208' }] },
+      { code: 'STAT-UB 103', name: 'Statistics for Business Control', colorId: 6, meetings: [{ type: 'Lecture', days: 'Mon, Wed, Fri', time: '9:30–10:20 AM', location: 'Tisch UC-25' }] } ],
+      upcoming: [
+      { date: '2026-10-12', title: 'ECON-UA 10: No class (fall break)', kind: 'NO CLASS', colorId: 10 },
+      { date: '2026-10-15', title: 'FINC-UB 4050: Case memo due', kind: 'ASSIGNMENT', time: '11:00 AM', colorId: 9 },
+      { date: '2026-10-16', title: 'STAT-UB 103: Quiz 2', kind: 'QUIZ', colorId: 6 },
+      { date: '2026-10-23', title: 'ECON-UA 10: Problem Set 3 due', kind: 'ASSIGNMENT', time: '5:00 PM', colorId: 10 },
+      { date: '2026-10-27', title: 'FINC-UB 4050: Midterm Exam', kind: 'EXAM', time: '11:00 AM', colorId: 9 },
+      { date: '2026-10-30', title: 'STAT-UB 103: Project proposal due', kind: 'PROJECT', time: '5:00 PM', colorId: 6 } ] });
+  }, 250));
+}
+
+/* ---------- start ---------- */
+(async function init() {
+  if (DEMO) { $('statusText').textContent = 'demo'; $('dot').className = 'dot on'; await loadFeed(); await loadState(); $('statusText').textContent = 'demo data'; return; }
+  if (!key) return showLock();
+  try { await loadFeed(); loadState(); }
+  catch (e) { if (e.locked) showLock('Passcode changed. Enter the new one.'); else { setStatus(false, 'offline'); showLock("Can't reach Sylli right now."); } }
+  setInterval(() => { if (!waiting && !document.hidden && key) { loadFeed().catch(() => {}); } }, 20000);
+  setInterval(() => { if (!waiting && !document.hidden && key) loadState(); }, 90000);
+})();
+</script>
+</body>
+</html>
