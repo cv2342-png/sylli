@@ -73,7 +73,15 @@ h1,h2,h3{margin:0;font-weight:600}
 .sw.sel{box-shadow:0 0 0 2px var(--ink)}
 
 /* upcoming */
-.seg{margin-left:auto;display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
+.tog{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;user-select:none}
+.tog input{accent-color:var(--purple);margin:0}
+.chk{appearance:none;-webkit-appearance:none;width:19px;height:19px;border:1.5px solid #c3b8cf;border-radius:50%;flex:none;cursor:pointer;display:grid;place-items:center;margin:0;background:#fff}
+.chk:hover{border-color:var(--purple)}
+.chk:checked{background:var(--purple);border-color:var(--purple)}
+.chk:checked::after{content:"";width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+.ev.done{opacity:.55}
+.ev.done .t{text-decoration:line-through;color:var(--muted)}
+.seg{margin-left:10px;display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
 .seg button{border:0;background:none;padding:5px 11px;font-size:13px;font-weight:500;color:var(--muted);border-left:1px solid var(--line)}
 .seg button:first-child{border-left:0}
 .seg button:hover{color:var(--purple)}
@@ -136,7 +144,8 @@ h1,h2,h3{margin:0;font-weight:600}
   .day{grid-template-columns:70px 1fr}
   .ev{flex-wrap:wrap;row-gap:2px}
   .ev .t{flex:1 1 calc(100% - 20px)}
-  .ev .badge{margin-left:18px}
+  .ev .badge{margin-left:46px}
+  .card h2{flex-wrap:wrap}
 }
 </style>
 </head>
@@ -176,6 +185,7 @@ h1,h2,h3{margin:0;font-weight:600}
 
     <section class="card">
       <h2>Coming up <span class="count" id="upCount"></span>
+        <label class="tog"><input type="checkbox" id="showDone"> Show completed</label>
         <span class="seg" id="range" role="group" aria-label="Time range"><button type="button" data-d="1">Day</button><button type="button" data-d="3">3 Days</button><button type="button" data-d="7">Week</button><button type="button" data-d="30">Month</button></span>
       </h2>
       <div id="upcoming"><div class="empty">Loading…</div></div>
@@ -257,6 +267,9 @@ $('lockBtn').onclick = () => { key = ''; try { localStorage.removeItem('sylli-ke
 
 /* ---------- classes + upcoming ---------- */
 function colorOf(id) { return (COLORS[id] || [null, '#b9aec6'])[1]; }
+let done = new Set(), showDone = false;   // checked-off items, saved in this browser only (never touches the calendar)
+try { done = new Set(JSON.parse(localStorage.getItem('sylli-done') || '[]')); } catch (e) {}
+const evId = e => e.id || (e.date + '|' + e.title);
 let lastState = null, rangeDays = 7;
 try { rangeDays = +localStorage.getItem('sylli-range') || 7; } catch (e) {}
 const RANGE = { 1: 'today', 3: 'the next 3 days', 7: 'the next week', 30: 'the next month' };
@@ -275,21 +288,31 @@ function renderState(s) {
       </div>
     </div>`).join('') : '<div class="empty">No classes yet. Add a syllabus above to get started.</div>';
   const end = new Date(); end.setDate(end.getDate() + rangeDays - 1);
-  const up = (s.upcoming || []).filter(e => e.date <= ymd(end));
-  $('upCount').textContent = up.length ? `${up.length} ${rangeDays === 1 ? 'today' : 'in ' + RANGE[rangeDays]}` : '';
+  const inRange = (s.upcoming || []).filter(e => e.date <= ymd(end));
+  const open = inRange.filter(e => !done.has(evId(e))), nDone = inRange.length - open.length;
+  const up = showDone ? inRange : open;
+  const span = rangeDays === 1 ? 'today' : 'in ' + RANGE[rangeDays];
+  $('upCount').textContent = (open.length ? `${open.length} ${span}` : '') + (nDone ? `${open.length ? ' · ' : ''}${nDone} done` : '');
   document.querySelectorAll('#range button').forEach(b => b.classList.toggle('on', +b.dataset.d === rangeDays));
   const days = {};
   up.forEach(e => (days[e.date] = days[e.date] || []).push(e));
   $('upcoming').innerHTML = up.length ? Object.entries(days).map(([d, evs]) => {
     const dt = new Date(d + 'T12:00:00');
     return `<div class="day"><div class="when"><b>${dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</b>${dt.toLocaleDateString('en-US', { weekday: 'long' })}</div><div>${evs.map(e => `
-      <div class="ev" style="--c:${colorOf(e.colorId)}"><i></i><div class="t">${esc(e.title)}</div>${e.kind ? `<span class="badge">${esc(e.kind)}</span>` : ''}<span class="time">${esc(e.time || 'all day')}</span></div>`).join('')}</div></div>`;
-  }).join('') : `<div class="empty">Nothing due ${rangeDays === 1 ? 'today' : 'in ' + RANGE[rangeDays]}.</div>`;
+      <div class="ev${done.has(evId(e)) ? ' done' : ''}" style="--c:${colorOf(e.colorId)}"><input type="checkbox" class="chk" data-id="${esc(evId(e))}" aria-label="Mark done"${done.has(evId(e)) ? ' checked' : ''}><i></i><div class="t">${esc(e.title)}</div>${e.kind ? `<span class="badge">${esc(e.kind)}</span>` : ''}<span class="time">${esc(e.time || 'all day')}</span></div>`).join('')}</div></div>`;
+  }).join('') : `<div class="empty">${nDone ? 'All done ' + (rangeDays === 1 ? 'for today' : 'for ' + RANGE[rangeDays]) + ' \u{1F389}' : 'Nothing due ' + span + '.'}</div>`;
 }
 async function loadState() {
   try { renderState(await api('/state')); setStatus(true, 'connected'); }
   catch (e) { if (e.locked) return showLock(); setStatus(false, 'offline'); }
 }
+$('upcoming').addEventListener('change', e => {
+  const c = e.target.closest('.chk'); if (!c) return;
+  c.checked ? done.add(c.dataset.id) : done.delete(c.dataset.id);
+  try { localStorage.setItem('sylli-done', JSON.stringify([...done])); } catch (e) {}
+  if (lastState) renderState(lastState);
+});
+$('showDone').addEventListener('change', e => { showDone = e.target.checked; if (lastState) renderState(lastState); });
 $('range').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   rangeDays = +b.dataset.d; try { localStorage.setItem('sylli-range', rangeDays); } catch (e) {}
