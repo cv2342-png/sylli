@@ -281,7 +281,7 @@ function renderChat() {
   const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
   const shown = feed.filter(r => r.id > (hideBefore || 0));
   let html = shown.map(r => `<div class="m ${r.role}">${esc(r.content)}</div>`).join('');
-  if (!shown.length && !waiting) html = '<div class="m system">Fresh chat. Sylli still remembers everything from before.</div>';
+  if (!shown.length && !waiting) html = '<div class="m system">Ask Sylli anything about your courses!</div>';
   if (waiting) {
     const seen = feed.some(r => r.id > waiting.base && r.role === 'user');
     if (!seen && waiting.text) html += `<div class="m user">${esc(waiting.text)}</div>`;
