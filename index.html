@@ -115,6 +115,11 @@ h1,h2,h3{margin:0;font-weight:600}
 .confirm b{display:block;margin-bottom:4px}
 .confirm ul{margin:0 0 10px;padding-left:18px;font-size:13.5px;max-height:110px;overflow:auto}
 .confirm .row{display:flex;gap:8px}
+.pick{border-color:#d9c8e8;background:#fbf7fe}
+.secs{display:flex;flex-direction:column;gap:6px;margin:6px 0 10px}
+.secs button{text-align:left;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 11px;font-size:13.5px;color:var(--ink)}
+.secs button:hover{border-color:var(--purple)}
+.secs button b{display:inline;margin:0}
 .danger{background:var(--warn);color:#fff;border:0;border-radius:9px;padding:8px 14px;font-weight:500}
 .quick{display:flex;gap:6px;overflow:auto;padding:8px 14px 0}
 .quick button{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:13px;color:#3b3345}
@@ -203,6 +208,11 @@ h1,h2,h3{margin:0;font-weight:600}
       <ul id="confirmList"></ul>
       <div class="row"><button class="danger" id="yesBtn" type="button">Yes, delete</button><button class="ghost" id="noBtn" type="button">Cancel</button></div>
     </div>
+    <div class="confirm pick" id="secBox" hidden>
+      <b>Which section are you in?</b>
+      <div class="secs" id="secList"></div>
+      <div class="row"><button class="ghost" id="secCancel" type="button">Cancel upload</button></div>
+    </div>
     <div class="quick" id="quick">
       <button type="button">What's due this week?</button>
       <button type="button">List my classes</button>
@@ -237,6 +247,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 let key = '';
 try { key = localStorage.getItem('sylli-key') || ''; } catch (e) {}
 let feed = [], pending = [], waiting = null, pollTimer = null, pdfText = '', pdfName = '';
+let pendingUpload = null;   // set when an upload is waiting on "which section?"
 let acks = [];   // "got your syllabus" notes shown right after an upload (this page only)
 const ACK = 'Got your syllabus! Give me a minute to add it to your calendar.';
 const pretty = r => r.role === 'user' ? String(r.content || '').replace(/^\(sent syllabus PDF: (.+?)\)\s*/, '\u{1F4C4} $1\n').trim() : r.content;
@@ -348,11 +359,16 @@ function renderChat() {
     $('confirmTitle').textContent = `Delete ${pending.length} event${pending.length === 1 ? '' : 's'}?`;
     $('confirmList').innerHTML = pending.map(p => `<li>${esc(p.label || p.event_id)}</li>`).join('');
   } else c.hidden = true;
+  const sb = $('secBox'), secs = (pendingUpload && pendingUpload.sections) || [];
+  if (secs.length && !waiting) {
+    sb.hidden = false;
+    $('secList').innerHTML = secs.map(x => `<button type="button" data-id="${esc(x.id)}"><b>Section ${esc(x.id)}</b>${x.label ? ' \u00b7 ' + esc(x.label) : ''}</button>`).join('');
+  } else sb.hidden = true;
   $('send').disabled = !!waiting; $('uploadBtn').disabled = !!waiting || !pdfText;
 }
 async function loadFeed() {
   const d = await api('/feed');
-  feed = d.messages || []; pending = d.pending || [];
+  feed = d.messages || []; pending = d.pending || []; pendingUpload = d.pendingUpload || null;
   if (hideBefore === null) hideBefore = maxId();
   renderChat(); return d;
 }
@@ -383,6 +399,8 @@ $('input').addEventListener('input', autosize);
 $('input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat($('input').value); } });
 $('send').onclick = () => sendChat($('input').value);
 $('quick').addEventListener('click', e => { if (e.target.tagName === 'BUTTON') sendChat(e.target.textContent); });
+$('secList').addEventListener('click', e => { const b = e.target.closest('button'); if (b) sendChat('section ' + b.dataset.id); });
+$('secCancel').onclick = () => sendChat('cancel');
 $('yesBtn').onclick = () => sendChat('yes');
 $('noBtn').onclick = () => sendChat('no');
 
