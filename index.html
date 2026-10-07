@@ -217,6 +217,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 let key = '';
 try { key = localStorage.getItem('sylli-key') || ''; } catch (e) {}
 let feed = [], pending = [], waiting = null, pollTimer = null, pdfText = '', pdfName = '';
+let hideBefore = DEMO ? 0 : null;   // chat shows only messages from this page load; Sylli's memory is untouched
 
 /* ---------- api ---------- */
 async function api(path, opts = {}) {
@@ -278,8 +279,9 @@ $('classes').addEventListener('click', e => {
 function renderChat() {
   const box = $('msgs');
   const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
-  let html = feed.map(r => `<div class="m ${r.role}">${esc(r.content)}</div>`).join('');
-  if (!feed.length && !waiting) html = '<div class="m system">Say hi, or drop in a syllabus to get started.</div>';
+  const shown = feed.filter(r => r.id > (hideBefore || 0));
+  let html = shown.map(r => `<div class="m ${r.role}">${esc(r.content)}</div>`).join('');
+  if (!shown.length && !waiting) html = '<div class="m system">Fresh chat. Sylli still remembers everything from before.</div>';
   if (waiting) {
     const seen = feed.some(r => r.id > waiting.base && r.role === 'user');
     if (!seen && waiting.text) html += `<div class="m user">${esc(waiting.text)}</div>`;
@@ -298,6 +300,7 @@ function renderChat() {
 async function loadFeed() {
   const d = await api('/feed');
   feed = d.messages || []; pending = d.pending || [];
+  if (hideBefore === null) hideBefore = maxId();
   renderChat(); return d;
 }
 function maxId() { return feed.reduce((m, r) => Math.max(m, r.id || 0), 0); }
@@ -396,6 +399,9 @@ function demo(path, opts) {
       { date: '2026-10-30', title: 'STAT-UB 103: Project proposal due', kind: 'PROJECT', time: '5:00 PM', colorId: 6 } ] });
   }, 250));
 }
+
+/* ---------- confirm before refreshing or leaving ---------- */
+window.addEventListener('beforeunload', e => { e.preventDefault(); e.returnValue = ''; });
 
 /* ---------- start ---------- */
 (async function init() {
