@@ -241,7 +241,7 @@ h1,h2,h3{margin:0;font-weight:600}
 /* ---------- config ---------- */
 const API = 'https://cv2342.app.n8n.cloud/webhook/sylli';
 const DEMO = new URLSearchParams(location.search).has('demo');
-const COLORS = {1:['Lavender','#7986cb'],2:['Sage','#33b679'],3:['Grape','#8e24aa'],4:['Flamingo','#e67c73'],5:['Banana','#f6bf26'],6:['Tangerine','#f4511e'],7:['Peacock','#039be5'],8:['Graphite','#616161'],9:['Blueberry','#3f51b5'],10:['Basil','#0b8043'],11:['Tomato','#d50000']};
+const COLORS = {1:['Light purple','#7986cb'],2:['Light green','#33b679'],3:['Purple','#8e24aa'],4:['Pink','#e67c73'],5:['Yellow','#f6bf26'],6:['Orange','#f4511e'],7:['Light blue','#039be5'],8:['Gray','#616161'],9:['Blue','#3f51b5'],10:['Green','#0b8043'],11:['Red','#d50000']};
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let key = '';
@@ -331,14 +331,14 @@ $('range').addEventListener('click', e => {
 });
 $('classes').addEventListener('click', e => {
   const b = e.target.closest('.sw'); if (!b) return;
-  sendChat(`make ${b.dataset.code} ${b.dataset.color}`);
+  sendChat(`Make ${b.dataset.code} ${b.dataset.color.toLowerCase()}`);
 });
 
 /* ---------- chat ---------- */
 function renderChat() {
   const box = $('msgs');
   const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
-  const shown = feed.filter(r => r.id > (hideBefore || 0));
+  const shown = feed.filter(r => r.id > (hideBefore || 0) && r.role !== 'system');
   const placed = new Set();
   let html = shown.map(r => {
     let h = `<div class="m ${r.role}">${esc(pretty(r))}</div>`;
@@ -399,10 +399,10 @@ $('input').addEventListener('input', autosize);
 $('input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat($('input').value); } });
 $('send').onclick = () => sendChat($('input').value);
 $('quick').addEventListener('click', e => { if (e.target.tagName === 'BUTTON') sendChat(e.target.textContent); });
-$('secList').addEventListener('click', e => { const b = e.target.closest('button'); if (b) sendChat('section ' + b.dataset.id); });
-$('secCancel').onclick = () => sendChat('cancel');
-$('yesBtn').onclick = () => sendChat('yes');
-$('noBtn').onclick = () => sendChat('no');
+$('secList').addEventListener('click', e => { const b = e.target.closest('button'); if (b) sendChat('Section ' + b.dataset.id); });
+$('secCancel').onclick = () => sendChat('Cancel');
+$('yesBtn').onclick = () => sendChat('Yes');
+$('noBtn').onclick = () => sendChat('No');
 
 /* ---------- upload ---------- */
 async function readPdf(file) {
