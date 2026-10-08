@@ -291,7 +291,7 @@ function renderState(s) {
   $('classCount').textContent = cl.length ? cl.length : '';
   $('classes').innerHTML = cl.length ? cl.map(c => `
     <div class="class" style="--c:${colorOf(c.colorId)}">
-      <div class="code">${esc(c.code)}</div>
+      ${c.name && c.name.trim().toLowerCase() !== c.code.trim().toLowerCase() ? `<div class="code">${esc(c.code)}</div>` : ''}
       <div class="name">${esc(c.name || c.code)}</div>
       ${(c.meetings || []).map(m => `<div class="meet"><span>${esc(m.type)}</span><span>${esc(m.days)} · ${esc(m.time)}${m.location ? ' · ' + esc(m.location) : ''}</span></div>`).join('') || '<div class="meet"><span>No class times</span></div>'}
       <div class="swatches" role="group" aria-label="Class color">
